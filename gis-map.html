@@ -1,0 +1,93 @@
+﻿
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <link rel="stylesheet" href="style.css"> 
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>ГИС Школы г. Сургута L</title>
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAACHCJdlgAEGcD_flKUFEmVhQlAYd20Yeej0MiKNuYPUGBnCwDThQlwUCPtCqtX3RC7LUKE-JYan3T4g"
+            type="text/javascript"></script>
+
+    <script type="text/javascript">
+    //<![CDATA[
+
+    var iconBlue = new GIcon(); 
+    iconBlue.image = 'http://labs.google.com/ridefinder/images/mm_20_blue.png';
+    iconBlue.shadow = 'http://labs.google.com/ridefinder/images/mm_20_shadow.png';
+    iconBlue.iconSize = new GSize(12, 20);
+    iconBlue.shadowSize = new GSize(22, 20);
+    iconBlue.iconAnchor = new GPoint(6, 20);
+    iconBlue.infoWindowAnchor = new GPoint(5, 1);
+
+    var customIcons = [];
+    customIcons["school"] = iconBlue;
+  
+    function load() {
+      if (GBrowserIsCompatible()) {
+        var map = new GMap2(document.getElementById("map"));
+        map.addControl(new GSmallMapControl());
+        map.addControl(new GMapTypeControl());
+        map.setCenter(new GLatLng(61.253996, 73.396425), 13);
+	
+
+        GDownloadUrl("phpsqlajax_genxml.php", function(data) {
+		
+          var xml = GXml.parse(data);
+          var markers = xml.documentElement.getElementsByTagName("marker");
+		
+		  	
+          for (var i = 0; i < markers.length; i++) {
+		
+		    var id = markers[i].getAttribute("id"); 
+		    var photo = markers[i].getAttribute("photo");  
+            var name = markers[i].getAttribute("name");
+            var address = markers[i].getAttribute("address");
+			var phone = markers[i].getAttribute("phone");
+            var type = markers[i].getAttribute("type");
+			var email = markers[i].getAttribute("email");
+			var strength = markers[i].getAttribute("strength");
+								
+            var point = new GLatLng(parseFloat(markers[i].getAttribute("lat")),
+                                    parseFloat(markers[i].getAttribute("lng")));
+            var marker = createMarker(point, name, address, phone, type, photo, id, email, strength);
+				map.addOverlay(marker);	
+		
+          }
+        });
+      }
+    }
+
+    function createMarker(point, name, address, phone, type, photo, id, email, strength) {
+      var marker = new GMarker(point, customIcons[type]);
+	
+      var html = "<b>" + name + "&nbsp" + id +"</b> <br/>" + 'Адрес: ' + address +  "<br>" + 'E-mail:' + email + '<br>' + 'Телефон: ' + phone + "<br>" + 'Численность: ' + strength + '<br>' + "<img src=" + photo + ">";
+      
+      GEvent.addListener(marker, 'click', function() {
+        marker.openInfoWindowHtml(html);
+      });
+      return marker;
+    }
+    //]]>
+  </script>
+
+  </head>
+
+  <body onload="load()" >
+  <!-- onunload="GUnload()"> -->
+     <h3> ГИС Школы г. Сургута </h3>
+	<div style="overflow: hidden;">
+    <div style="width: 1000%;">
+	 
+        <div id="map" style="float: left; width: 800px; height: 600px"></div>
+	    <div id="menu" style="float: left; width: 200px; height: 600px">
+	
+				<a href="search_timework.html"> Поиск по времени работы </a> <br><br>
+				<a href="search_radius.html"> Поиск в окружности </a> <br><br>
+				<a href="search_strength.html"> Поиск по численности </a> <br><br>
+	    </div>			
+	</div>
+ </div>	
+
+ </body>
+</html>

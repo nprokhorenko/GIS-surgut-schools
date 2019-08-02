@@ -1,0 +1,151 @@
+﻿<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<link rel="stylesheet" href="style.css">
+<title> Поиск школ по численности учеников </title>
+<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+ 
+<script type="text/javascript"> 
+var map, infoWindow, userMarker = [], side_bar_html = ""; 
+ 
+var gmarkers = new Array();
+ 
+var infowindow = new google.maps.InfoWindow(
+  { 
+    size: new google.maps.Size(150,50)
+});
+ 
+function createMarker(latlng, name, number, html) {
+    var contentString = html;
+    var marker = new google.maps.Marker({
+        position: latlng,
+        map: map        
+        });
+ 
+google.maps.event.addListener(marker, 'click', function() {
+        infowindow.setContent(contentString); 
+        infowindow.open(map,marker);
+});
+ 
+gmarkers.push(marker);
+side_bar_html += '<font size="1"><a href="javascript:myclick(' + (gmarkers.length-1) + ')">' + name + '&nbsp' + number + '</a><br></font><br>';
+}
+ 
+function initialize() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: new google.maps.LatLng(61.253996, 73.386425),
+        zoom: 12,
+        mapTypeId: 'roadmap',
+        mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU}
+      }); 
+ infoWindow = new google.maps.InfoWindow();
+ $("#sidebar").html("");
+}
+ 
+ function searchLocations() {
+ initialize()
+
+     var strength_start = $('#strength_start').val();
+	 var strength_end = $('#strength_end').val();	 
+	 var strength = $('#strength').val();	 
+	 
+ 
+
+ var marker;	
+ var sidebar = $("#sidebar").html();
+	$("#sidebar").html(sidebar);
+ 
+     $.getJSON("phpsqlsearch_genjson.php", {strength_start : strength_start, strength_end : strength_end,
+	 strength:strength }, function(json){
+
+				
+ 
+			if (json.length == null) {
+				$("#sidebar").html('Ничего не найдено.');
+				return;
+			} 
+ 
+
+		for (i = 0; i < json.length; i++) {
+
+		var name = json[i].name;
+        var number = json[i].id;		
+		var address = '' + name + '<br>' + '<b><br>'+number + '<br></b>'+json[i].address + '<br>';
+ 
+		var point = new google.maps.LatLng(json[i].lat, json[i].lng);         
+		marker = createMarker(point, name, number, address);  
+		//bounds.extend(point);   
+ 
+		}
+ 
+		//map.fitBounds(bounds);
+       		
+		$("#sidebar").append(side_bar_html);	
+		side_bar_html = "";
+ 
+		});		
+ 
+     
+	 
+}	 
+
+ 
+function myclick(i) {
+  var latLng = gmarkers[i].getPosition();
+  map.setCenter(latLng);
+  map.setZoom(17);
+  google.maps.event.trigger(gmarkers[i], "click");
+}
+ 
+function clearOverlay() {
+     infoWindow.close();
+     for (var i = 0; i < gmarkers.length; i++) {
+       gmarkers[i].setMap(null);
+     }
+     gmarkers.length = 0;
+ 
+     side_bar_html = "";
+     $("#sidebar").html("");
+   } 
+ 
+  </script> 
+ 
+  <style type="text/css">
+ 
+html, body { height: 100%; } 
+ 
+font-family: Arial, Helvetica, sans-serif;
+font-size: 10px;
+
+#sidebar{
+
+font-size:8pt;
+
+}
+</style>
+ 
+</head> 
+ 
+<body onload="initialize()"> 
+
+<p>
+<b>Численность:<b><br>
+<b> От: </b> 
+<input type="text" name="strength_start" id = "strength_start" value="">
+<br> 
+<b> До: </b>
+<input type="text" name="strength_end" id = "strength_end" value="">
+<br>
+<br>
+<input type="button" onclick="searchLocations()" id = "strength" value="Поиск"/> 
+</p>
+
+ <div>
+<div id="mymap_div" style="width:1050px;"> 
+<div id="sidebar" style="float:left; width: 250px; overflow: auto;"></div> 
+<div id="map" style="width: 800px; height:600px;"></div> 
+</div> 
+ 
+</body> 
+</html>

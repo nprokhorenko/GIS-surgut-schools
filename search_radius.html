@@ -1,0 +1,187 @@
+﻿<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<title>Поиск школ в некотором радиусе</title> 
+<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+ 
+<script type="text/javascript"> 
+var map, infoWindow, userMarker = [], side_bar_html = ""; 
+ 
+var gmarkers = new Array();
+ 
+var infowindow = new google.maps.InfoWindow(
+  { 
+    size: new google.maps.Size(150,50)
+});
+       
+function createMarker(latlng, name, number, html) {
+    var contentString = html;
+    var marker = new google.maps.Marker({
+        position: latlng,
+        map: map        
+        });
+ 
+google.maps.event.addListener(marker, 'click', function() {
+        infowindow.setContent(contentString); 
+        infowindow.open(map,marker);
+});
+ 
+gmarkers.push(marker);
+side_bar_html += '<font size="1" ><a href="javascript:myclick(' + (gmarkers.length-1) + ')">' + name + '&nbsp' + number + '</a><br></font>';
+}
+ 
+function initialize() {
+
+      var lat = $('#lat').val();
+	  var lng = $('#lng').val();
+	  
+	  if(lat.length > 0 && lng.length > 0 ) {
+	     var lat = $('#lat').val();
+	     var lng = $('#lng').val();
+		 
+	  } else {
+         var lat = 61.253996;
+         var lng = 73.386425;		 
+	  }
+
+      map = new google.maps.Map(document.getElementById("map"), {
+	     
+        center: new google.maps.LatLng(lat, lng),
+        zoom: 13,
+        mapTypeId: 'roadmap',
+        mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.DROPDOWN_MENU}
+      }); 
+ infoWindow = new google.maps.InfoWindow();
+}
+ 
+function searchLocations() {
+
+     initialize();
+     var lat = $('#lat').val();
+	 var lng = $('#lng').val();
+ 
+	 var address = $('#addressLoc').val();
+	 var radius = $('#radiusSelect').val();	 
+ 
+	var geocoder = new google.maps.Geocoder();
+     geocoder.geocode({address: address}, function(results, status) {
+       if (status == google.maps.GeocoderStatus.OK) {
+	   
+	    if((lat.length > 0) && (lng.length > 0)) {
+		
+			var locations_lat = lat;
+			var locations_lng = lng;
+	    }
+		else {		
+		
+			var locations_lat = results[0].geometry.location.lat();
+			var locations_lng = results[0].geometry.location.lng();
+		}	
+ 
+		while(userMarker[0]){
+			userMarker.pop().setMap(null);
+			}		
+ 
+	
+	 if((lat.length > 0) && (lng.length > 0)) {
+		var myLatLng = new google.maps.LatLng(lat, lng);
+	}
+    else {
+       var myLatLng = new google.maps.LatLng(locations_lat, locations_lng);
+    }	
+	userMarker[0] = new google.maps.Marker({
+		position: myLatLng,
+		map: map,
+		icon: 'home-1.png'
+	});
+ 
+	var bounds = new google.maps.LatLngBounds();
+    clearOverlay();
+ 
+	var sidebar = $("#sidebar").html();
+	$("#sidebar").html(sidebar);
+ 
+	
+		$.getJSON("phpsqlsearch_genjson.php", {lat : locations_lat, lng : locations_lng, radius:radius }, function(json){
+ 
+			var marker;		
+ 
+			if (json.length == null) {
+				$("#sidebar").html('Ничего не найдено.');
+				return;
+			} 
+ 
+ 
+		for (i = 0; i < json.length; i++) {
+		var name = json[i].name;
+        var number = json[i].id;		
+		var address = ''+name+'<br>'+'<b>' + number + '</b><br>'+json[i].address+'<br>';
+ 
+		var point = new google.maps.LatLng(json[i].lat, json[i].lng);         
+		marker = createMarker(point, name, number, address);  
+		bounds.extend(point);   
+ 
+		}
+ 
+		map.fitBounds(bounds);
+		$("#sidebar").append(side_bar_html);	
+ 
+		});		
+ 
+       } else {
+         alert(address + ' not found');
+       }
+     });
+  
+   }
+ 
+function myclick(i) {
+  var latLng = gmarkers[i].getPosition();
+  map.setCenter(latLng);
+  map.setZoom(17);
+  google.maps.event.trigger(gmarkers[i], "click");
+}
+ 
+function clearOverlay() {
+     infoWindow.close();
+     for (var i = 0; i < gmarkers.length; i++) {
+       gmarkers[i].setMap(null);
+     }
+     gmarkers.length = 0;
+ 
+     side_bar_html = "";
+     $("#sidebar").html("");
+   } 
+ 
+
+
+  </script> 
+ 
+  <style type="text/css">
+ 
+html, body { height: 100%; } 
+ 
+font-family: Arial, Helvetica, sans-serif;
+font-size: 10px;
+</style>
+ 
+</head> 
+ 
+<body onload="initialize()"> 
+<p>Ваш адрес: <input type="text" id="addressLoc" size="40" value="Сургут"/> 
+ Радиус поиска км: <input type="text" id="radiusSelect" size="5"/> <br>
+ Если поиск не из центра города, то укажите координаты точки от котой ищем:<br>
+ lat: <input type="text" name="lat" id="lat"  value="" onkeyup="return initialize(this);" onchange="return initialize(this);"> <br>
+ lng: <input type="text" name="lng" id="lng" value=""  onkeyup="return initialize(this);" onchange="return initialize(this);"><br><br>
+ 
+<input type="button" onclick="searchLocations()" value="Найти"/> 
+</p> 
+ 
+<div id="mymap_div" style="width:1050px;"> 
+<div id="sidebar" style="float:left; width: 250px;  overflow: auto;"></div> 
+<div id="map" style="width: 800px; height:600px;"></div> 
+</div> 
+ 
+</body> 
+</html>
